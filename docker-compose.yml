@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # PostgreSQL (既存)
+  postgres:
+    image: postgres:15
+    container_name: tech-doc-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tech_doc_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # PostgreSQL (Serena用テスト)
+  serena-db:
+    image: postgres:15
+    container_name: serena-test-db
+    environment:
+      POSTGRES_USER: serena_user
+      POSTGRES_PASSWORD: serena_password
+      POSTGRES_DB: serena_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - serena_data:/var/lib/postgresql/data
+
+  # SQL Server (テスト用)
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver-test
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: YourStrong@Passw0rd
+      MSSQL_PID: Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+volumes:
+  postgres_data:
+  serena_data:
+  sqlserver_data:

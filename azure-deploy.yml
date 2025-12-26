@@ -1,0 +1,55 @@
+# Azure Container Apps デプロイ設定
+
+# 前提条件:
+# 1. Azure CLIインストール
+# 2. リソースグループ作成
+# 3. Container Registry作成
+# 4. Container Apps環境作成
+
+# コマンド例:
+# az login
+# az group create --name tech-doc-rg --location japaneast
+# az acr create --resource-group tech-doc-rg --name techdocacr --sku Basic
+# az containerapp env create --name tech-doc-env --resource-group tech-doc-rg --location japaneast
+
+# PostgreSQL
+# az postgres flexible-server create \
+#   --resource-group tech-doc-rg \
+#   --name tech-doc-postgres \
+#   --location japaneast \
+#   --admin-user dbadmin \
+#   --admin-password <your-password> \
+#   --sku-name Standard_B1ms \
+#   --storage-size 32 \
+#   --version 15
+
+# Container Apps デプロイ
+# Backend
+# az containerapp create \
+#   --name tech-doc-backend \
+#   --resource-group tech-doc-rg \
+#   --environment tech-doc-env \
+#   --image techdocacr.azurecr.io/backend:latest \
+#   --target-port 8001 \
+#   --ingress external \
+#   --registry-server techdocacr.azurecr.io \
+#   --env-vars \
+#     DATABASE_URL=<postgres-connection-string> \
+#     OPENAI_API_KEY=<your-key> \
+#     PINECONE_API_KEY=<your-key>
+
+# Frontend
+# az containerapp create \
+#   --name tech-doc-frontend \
+#   --resource-group tech-doc-rg \
+#   --environment tech-doc-env \
+#   --image techdocacr.azurecr.io/frontend:latest \
+#   --target-port 3001 \
+#   --ingress external \
+#   --registry-server techdocacr.azurecr.io \
+#   --env-vars \
+#     DATABASE_URL=<postgres-connection-string> \
+#     NEXTAUTH_SECRET=<your-secret> \
+#     GITHUB_ID=<your-id> \
+#     GITHUB_SECRET=<your-secret> \
+#     NEXT_PUBLIC_API_URL=https://tech-doc-backend.<region>.azurecontainerapps.io

@@ -1,0 +1,58 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AZURE_RESOURCE_GROUP: tech-doc-rg
+  AZURE_CONTAINER_REGISTRY: techdocacr
+  BACKEND_IMAGE: backend
+  FRONTEND_IMAGE: frontend
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Login to Azure Container Registry
+      run: |
+        az acr login --name ${{ env.AZURE_CONTAINER_REGISTRY }}
+    
+    - name: Build and push backend image
+      working-directory: ./backend
+      run: |
+        docker build -t ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.BACKEND_IMAGE }}:${{ github.sha }} .
+        docker build -t ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.BACKEND_IMAGE }}:latest .
+        docker push ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+        docker push ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.BACKEND_IMAGE }}:latest
+    
+    - name: Build and push frontend image
+      working-directory: ./frontend
+      run: |
+        docker build -t ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.FRONTEND_IMAGE }}:${{ github.sha }} .
+        docker build -t ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.FRONTEND_IMAGE }}:latest .
+        docker push ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+        docker push ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.FRONTEND_IMAGE }}:latest
+    
+    - name: Deploy backend to Azure Container Apps
+      run: |
+        az containerapp update \
+          --name tech-doc-backend \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+          --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+    
+    - name: Deploy frontend to Azure Container Apps
+      run: |
+        az containerapp update \
+          --name tech-doc-frontend \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+          --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
