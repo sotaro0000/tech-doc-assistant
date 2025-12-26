@@ -1,0 +1,39 @@
+# 環境変数
+.env
+.env.local
+.env.*.local
+*.env
+
+# API キー・シークレット
+*secret*
+*key*
+*.pem
+*.key
+
+# データベース
+*.db
+*.sqlite
+*.sql
+
+# ログ
+*.log
+
+# 依存関係
+node_modules/
+venv/
+__pycache__/
+
+# ビルド成果物
+.next/
+build/
+dist/
+
+# テスト
+coverage/
+.pytest_cache/
+playwright-report/
+
+# IDE
+.vscode/
+.idea/
+*.swp
