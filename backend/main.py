@@ -21,18 +21,6 @@ from slowapi.errors import RateLimitExceeded
 load_dotenv()
 app = FastAPI(title="Tech Doc Assistant API")
 
-limiter = Limiter(key_func=get_remote_address)
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-@app.get("/api/search")
-@limiter.limit("10/minute")  # 1分間に10リクエストまで
-async def search(request: Request):
-    ...
-
-
-
-
 # CORS設定
 app.add_middleware(
     CORSMiddleware,
@@ -46,6 +34,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+@app.get("/api/search")
+@limiter.limit("10/minute")  # 1分間に10リクエストまで
+async def search(request: Request):
+
 
 # テーブル作成
 Base.metadata.create_all(bind=engine)
