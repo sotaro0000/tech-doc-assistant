@@ -1,13 +1,12 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional,Dict
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from datetime import datetime
 import os
 from dotenv import load_dotenv
-from typing import Optional
 
 from database import SessionLocal, engine
 from models import Base, Document
@@ -384,18 +383,18 @@ async def analyze_from_url(url: str):
 # === データベース関連のモデル ===
 class DBConnectionTest(BaseModel):
     db_type: str
-    custom_config: Optional[Dict] = None
+    custom_config: Optional[dict] = None
 
 class DBQueryRequest(BaseModel):
     db_type: str
     query: str
-    custom_config: Optional[Dict] = None
+    custom_config: Optional[dict] = None
     limit: Optional[int] = 100
 
 class DBTableRequest(BaseModel):
     db_type: str
     table_name: str
-    custom_config: Optional[Dict] = None
+    custom_config: Optional[dict] = None
 
 # === DB接続テストエンドポイント ===
 @app.post("/api/database/test")
