@@ -12,15 +12,7 @@ export default function Header() {
         <span className="text-sm text-gray-500">読み込み中...</span>
       ) : session?.user ? (
         <>
-          {session.user.image && (
-            <Image
-              src={session.user.image}
-              alt="icon"
-              width={32}
-              height={32}
-              className="rounded-full"
-            />
-          )}
+          {/* 画像（Imageコンポーネント）を削除しました */}
           <span className="text-sm">{session.user.name}</span>
           <button
             onClick={() => signOut()}
