@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+// 環境変数からAPIのURLを取得
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+
 interface Document {
   id: number;
   title: string;
@@ -28,7 +31,7 @@ export default function DocumentsPage() {
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch('http://localhost:8001/documents');
+      const res = await fetch(`${API_URL}/documents`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -45,7 +48,7 @@ export default function DocumentsPage() {
   const handleDelete = async (id: number) => {
     if (!confirm('本当に削除しますか？')) return;
     try {
-      const res = await fetch(`http://localhost:8001/documents/${id}`, {
+      const res = await fetch(`${API_URL}/documents/${id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -94,6 +97,12 @@ export default function DocumentsPage() {
             {documents.map((doc) => (
               <Card key={doc.id} className="cursor-pointer hover:shadow-md transition" onClick={() => router.push(`/documents/${doc.id}`)}>
                 <CardHeader>
+                    <Button variant="outline" onClick={() => router.push('/data-analysis')}>
+                        📊データ分析
+                    </Button>
+                    <Button variant="outline" onClick={() => router.push('/database-connector')}>
+                        🗄️ DB接続
+                    </Button>
                   <CardTitle>{doc.title}</CardTitle>
                   <CardDescription>
                     作成: {new Date(doc.created_at).toLocaleDateString('ja-JP')}
