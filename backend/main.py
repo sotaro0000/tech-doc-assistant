@@ -18,8 +18,8 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
+
 limiter = Limiter(key_func=get_remote_address)
-app = FastAPI()
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -40,10 +40,9 @@ app = FastAPI(title="Tech Doc Assistant API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-    "http://localhost:3001",
-    "https://tech-doc-assistant.vercel.app",
-    "https://*.vercel.app",
-    "https://tech-doc-assistant-*.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://tech-doc-assistant.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -467,3 +466,9 @@ async def get_sample_data(request: DBTableRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+    if __name__ == "__main__":
+    import uvicorn
+    # Railway環境では PORT 環境変数が必須です
+    port = int(os.getenv("PORT", 8000)) 
+    uvicorn.run(app, host="0.0.0.0", port=port)
