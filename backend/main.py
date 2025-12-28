@@ -18,6 +18,8 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
+load_dotenv()
+app = FastAPI(title="Tech Doc Assistant API")
 
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
@@ -467,8 +469,8 @@ async def get_sample_data(request: DBTableRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-    if __name__ == "__main__":
+if __name__ == "__main__":
     import uvicorn
     # Railway環境では PORT 環境変数が必須です
     port = int(os.getenv("PORT", 8000)) 
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port,reload=True)
