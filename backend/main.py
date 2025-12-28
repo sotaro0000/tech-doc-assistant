@@ -30,11 +30,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 async def search(request: Request):
     ...
 
-# 環境変数読み込み
-load_dotenv()
 
-# テーブル作成
-Base.metadata.create_all(bind=engine)
 
 
 # CORS設定
@@ -44,11 +40,16 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:3001",
         "https://tech-doc-assistant.vercel.app",
+        "https://tech-doc-assistant-production.up.railway.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# テーブル作成
+Base.metadata.create_all(bind=engine)
+
 
 # DB依存性
 def get_db():
