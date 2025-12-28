@@ -14,12 +14,12 @@ export default function Home() {
   const [dbStatus, setDbStatus] = useState<string>('checking...');
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/health`)
+    fetch(`${API_URL}/health`)
       .then(res => res.json())
       .then(data => setApiStatus(data.status))
       .catch(() => setApiStatus('disconnected'));
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/health/db`)
+    fetch(`${API_URL}/health/db`)
       .then(res => res.json())
       .then(data => setDbStatus(data.database))
       .catch(() => setDbStatus('disconnected'));
