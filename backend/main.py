@@ -14,6 +14,21 @@ from models import Base, Document
 from fastapi import File, UploadFile
 import io
 
+from fastapi import FastAPI, Request
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+limiter = Limiter(key_func=get_remote_address)
+app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+@app.get("/api/search")
+@limiter.limit("10/minute")  # 1分間に10リクエストまで
+async def search(request: Request):
+    ...
+
 # 環境変数読み込み
 load_dotenv()
 
@@ -25,7 +40,11 @@ app = FastAPI(title="Tech Doc Assistant API")
 # CORS設定
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001"],
+    allow_origins=[
+        "http://localhost:3001",
+        "https://your-app.vercel.app",  # ← Vercel URL追加
+        "https://*.vercel.app"  # または全てのVercel
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -359,5 +378,92 @@ async def analyze_from_url(url: str):
             "analysis": result
         }
     
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+# === データベース関連のモデル ===
+class DBConnectionTest(BaseModel):
+    db_type: str
+    custom_config: Optional[Dict] = None
+
+class DBQueryRequest(BaseModel):
+    db_type: str
+    query: str
+    custom_config: Optional[Dict] = None
+    limit: Optional[int] = 100
+
+class DBTableRequest(BaseModel):
+    db_type: str
+    table_name: str
+    custom_config: Optional[Dict] = None
+
+# === DB接続テストエンドポイント ===
+@app.post("/api/database/test")
+async def test_database_connection(request: DBConnectionTest):
+    """データベース接続テスト"""
+    from services.database_connector import test_db_connection
+    
+    try:
+        result = await test_db_connection(request.db_type, request.custom_config)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# === テーブル一覧取得エンドポイント ===
+@app.post("/api/database/tables")
+async def get_database_tables(request: DBConnectionTest):
+    """テーブル一覧取得"""
+    from services.database_connector import DatabaseConnector
+    
+    try:
+        connector = DatabaseConnector(request.db_type, request.custom_config)
+        tables = connector.get_tables()
+        connector.close()
+        return {"tables": tables}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# === テーブルスキーマ取得エンドポイント ===
+@app.post("/api/database/schema")
+async def get_table_schema(request: DBTableRequest):
+    """テーブルスキーマ取得"""
+    from services.database_connector import DatabaseConnector
+    
+    try:
+        connector = DatabaseConnector(request.db_type, request.custom_config)
+        schema = connector.get_table_schema(request.table_name)
+        connector.close()
+        return {"table": request.table_name, "schema": schema}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# === クエリ実行エンドポイント ===
+@app.post("/api/database/query")
+async def execute_database_query(request: DBQueryRequest):
+    """データベースクエリ実行"""
+    from services.database_connector import query_database
+    
+    try:
+        result = await query_database(
+            request.db_type,
+            request.query,
+            request.custom_config,
+            request.limit
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# === サンプルデータ取得エンドポイント ===
+@app.post("/api/database/sample")
+async def get_sample_data(request: DBTableRequest):
+    """サンプルデータ取得"""
+    from services.database_connector import DatabaseConnector
+    
+    try:
+        connector = DatabaseConnector(request.db_type, request.custom_config)
+        result = connector.get_sample_data(request.table_name, limit=10)
+        connector.close()
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

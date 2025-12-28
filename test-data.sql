@@ -24,3 +24,11 @@ INSERT INTO projects (project_name, status, budget) VALUES
 ('Project Alpha', 'Active', 500000),
 ('Project Beta', 'Completed', 300000),
 ('Project Gamma', 'Planning', 750000);
+
+INSERT INTO "User" (id, email, name, image)
+VALUES (
+  'demo-user-001',
+  'demo@example.com',
+  'Demo User',
+  'https://avatars.githubusercontent.com/u/0'
+);
