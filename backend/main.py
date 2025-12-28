@@ -36,7 +36,6 @@ load_dotenv()
 # テーブル作成
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Tech Doc Assistant API")
 
 # CORS設定
 app.add_middleware(
