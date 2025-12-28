@@ -1,10 +1,17 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# PostgreSQL接続URL
-# 形式: postgresql://ユーザー名:パスワード@ホスト:ポート/データベース名
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:postgres@localhost:5433/tech_doc_db"
+# PostgreSQL接続URL（環境変数から取得、なければローカル用デフォルト）
+SQLALCHEMY_DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://postgres:postgres@localhost:5433/tech_doc_db"
+)
+
+# Railwayの場合、postgres://をpostgresql://に変換
+if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # エンジン作成
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
