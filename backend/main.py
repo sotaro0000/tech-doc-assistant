@@ -40,9 +40,10 @@ app = FastAPI(title="Tech Doc Assistant API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3001",
-        "https://your-app.vercel.app",  # ← Vercel URL追加
-        "https://*.vercel.app"  # または全てのVercel
+    "http://localhost:3001",
+    "https://tech-doc-assistant.vercel.app",
+    "https://*.vercel.app",
+    "https://tech-doc-assistant-*.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
