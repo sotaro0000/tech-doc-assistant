@@ -1,4 +1,7 @@
 'use client';
+const API_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  ? 'https://tech-doc-assistant-production.up.railway.app'
+  : 'http://localhost:8001';
 
 import { useSession, signIn } from 'next-auth/react';
 import { useEffect, useState } from 'react';
