@@ -42,7 +42,6 @@ app.add_middleware(
         "https://tech-doc-assistant.vercel.app",
         "https://tech-doc-assistant-production.up.railway.app"
     ],
-    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
