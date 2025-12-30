@@ -1,11 +1,13 @@
+openai
+langchain-openai
+langchain-text-splitters
+langchain
+langchain-community
 fastapi
 uvicorn
 sqlalchemy
 psycopg2-binary
 python-dotenv
-langchain
-langchain-community
-langchain-text-splitters
 tiktoken
 slowapi
 pydantic
