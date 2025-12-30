@@ -11,8 +11,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import dynamic from 'next/dynamic';
 
+// 1. API URL の環境変数対応
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+
 // Plotlyを動的インポート（SSR対策）
-const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
+const Plot = dynamic(() => import('react-plotly.js'), { 
+  ssr: false,
+  loading: () => <div className="h-[500px] flex items-center justify-center bg-gray-50">グラフを読み込み中...</div>
+});
 
 interface BasicInfo {
   rows: number;
@@ -82,7 +88,7 @@ export default function DataAnalysisPage() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch('http://localhost:8001/api/analyze/upload', {
+      const res = await fetch(`${API_URL}/api/analyze/upload`,{
         method: 'POST',
         body: formData,
       });

@@ -9,7 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import ReactMarkdown from 'react-markdown';
+
+// API URL の環境変数対応
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
 
 interface NotionPage {
   id: string;
@@ -38,6 +42,7 @@ export default function NotionImportPage() {
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
 
+  // 認証チェック
   if (status === 'unauthenticated') {
     router.push('/auth/signin');
     return null;
@@ -45,29 +50,37 @@ export default function NotionImportPage() {
 
   if (status === 'loading') {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">読み込み中...</div>
+      <div className="container mx-auto px-4 py-8 flex flex-col items-center gap-4">
+        <Skeleton className="h-12 w-[300px]" />
+        <Skeleton className="h-[400px] w-full max-w-4xl" />
       </div>
     );
   }
+
+  // 共通リクエスト関数
+  const apiRequest = async (endpoint: string, body: any) => {
+    const res = await fetch(`${API_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ detail: 'エラーが発生しました' }));
+      throw new Error(error.detail || 'リクエストに失敗しました');
+    }
+    return res.json();
+  };
 
   // Notionページ検索
   const handleSearch = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8001/api/notion/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: searchQuery || null,
-        }),
+      const data = await apiRequest('/api/notion/search', {
+        query: searchQuery || null,
       });
-
-      const data = await res.json();
       setSearchResults(data.pages || []);
-    } catch (error) {
-      console.error('Search failed:', error);
-      alert('検索に失敗しました。Notion統合が正しく設定されているか確認してください。');
+    } catch (error: any) {
+      alert(`検索失敗: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -82,25 +95,15 @@ export default function NotionImportPage() {
     }
 
     setLoading(true);
+    setPageData(null); // 前のデータをクリア
     try {
-      const res = await fetch('http://localhost:8001/api/notion/page', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          page_id: targetId,
-        }),
+      const data = await apiRequest('/api/notion/page', {
+        page_id: targetId,
       });
-
-      if (!res.ok) {
-        throw new Error('Failed to fetch page');
-      }
-
-      const data = await res.json();
       setPageData(data);
       setPageId(targetId);
-    } catch (error) {
-      console.error('Preview failed:', error);
-      alert('ページの取得に失敗しました。ページIDとNotion統合の接続を確認してください。');
+    } catch (error: any) {
+      alert(`プレビュー取得失敗: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -108,14 +111,10 @@ export default function NotionImportPage() {
 
   // ドキュメントとしてインポート
   const handleImport = async () => {
-    if (!pageData) {
-      alert('プレビューを表示してください');
-      return;
-    }
+    if (!pageData) return;
 
     setImporting(true);
     try {
-      // 1. Next.js APIでドキュメント作成
       const res = await fetch('/api/documents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -123,18 +122,20 @@ export default function NotionImportPage() {
           title: `[Notion] ${pageData.title}`,
           content: pageData.content,
           chunkStrategy: chunkStrategy,
+          metadata: {
+            source: 'notion',
+            notion_url: pageData.url,
+            notion_page_id: pageData.page_id
+          }
         }),
       });
 
-      if (res.ok) {
-        alert('インポートが完了しました！');
-        router.push('/documents');
-      } else {
-        throw new Error('Import failed');
-      }
-    } catch (error) {
-      console.error('Import failed:', error);
-      alert('インポートに失敗しました');
+      if (!res.ok) throw new Error('インポートに失敗しました');
+
+      alert('インポートが完了しました！');
+      router.push('/documents');
+    } catch (error: any) {
+      alert(error.message);
     } finally {
       setImporting(false);
     }
@@ -142,189 +143,156 @@ export default function NotionImportPage() {
 
   // URLからページIDを抽出
   const extractPageId = (url: string) => {
+    // notion.so/workspace/Page-Name-ID の形式からIDを抽出
     const match = url.match(/([a-f0-9]{32})/);
-    return match ? match[1] : url.replace(/-/g, '');
+    return match ? match[1] : url.split('/').pop()?.split('?')[0].replace(/-/g, '') || url;
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto space-y-8">
         {/* ヘッダー */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 border-b pb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">📥 Notionインポート</h1>
-            <p className="text-gray-600 mt-2">NotionページをMarkdownとしてインポートできます</p>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">📥 Notionインポート</h1>
+            <p className="text-slate-500 mt-2">Notionのドキュメントをナレッジベースに取り込みます</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.push('/documents')}>
-              ドキュメント一覧
-            </Button>
-            <Button variant="outline" onClick={() => router.push('/')}>
-              ホーム
-            </Button>
+            <Button variant="outline" onClick={() => router.push('/documents')}>一覧へ戻る</Button>
+            <Button variant="outline" onClick={() => router.push('/')}>ホーム</Button>
           </div>
         </div>
 
-        {/* タブ */}
-        <Tabs defaultValue="url" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="url">URLから取得</TabsTrigger>
-            <TabsTrigger value="search">検索から選択</TabsTrigger>
-          </TabsList>
-
-          {/* URLから取得タブ */}
-          <TabsContent value="url" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>NotionページURL / ID</CardTitle>
-                <CardDescription>
-                  NotionページのURLまたはページIDを入力してください
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="pageId">ページURL / ID</Label>
-                  <Input
-                    id="pageId"
-                    placeholder="https://notion.so/ページ名-xxxxx または xxxxx"
-                    value={pageId}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setPageId(value.includes('notion.so') ? extractPageId(value) : value);
-                    }}
-                  />
-                  <p className="text-xs text-gray-500">
-                    例: https://notion.so/Tech-Docs-1234567890abcdef1234567890abcdef
-                  </p>
-                </div>
-                <Button onClick={() => handlePreview()} disabled={loading}>
-                  {loading ? 'プレビュー取得中...' : 'プレビュー'}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* 検索タブ */}
-          <TabsContent value="search" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notionページ検索</CardTitle>
-                <CardDescription>
-                  統合が接続されているページを検索できます
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="検索キーワード（省略可）"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  />
-                  <Button onClick={handleSearch} disabled={loading}>
-                    {loading ? '検索中...' : '検索'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 検索結果 */}
-            {searchResults.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="font-semibold">検索結果 ({searchResults.length}件)</h3>
-                {searchResults.map((page) => (
-                  <Card key={page.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="pt-6">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h4 className="font-medium">{page.title}</h4>
-                          <p className="text-sm text-gray-500 mt-1">
-                            最終更新: {new Date(page.last_edited_time).toLocaleDateString('ja-JP')}
-                          </p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePreview(page.id)}
-                        >
-                          プレビュー
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-
-        {/* プレビュー */}
-        {pageData && (
-          <div className="mt-6 space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle>{pageData.title}</CardTitle>
-                    <CardDescription>
-                      <a href={pageData.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        Notionで開く →
-                      </a>
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Select value={chunkStrategy} onValueChange={setChunkStrategy}>
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="fixed">Fixed</SelectItem>
-                        <SelectItem value="markdown">Markdown</SelectItem>
-                        <SelectItem value="semantic">Semantic</SelectItem>
-                        <SelectItem value="hybrid">Hybrid</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button onClick={handleImport} disabled={importing}>
-                      {importing ? 'インポート中...' : '📥 ドキュメントとしてインポート'}
-                    </Button>
-                  </div>
-                </div>
+        {/* メイン設定エリア */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 space-y-6">
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">取得方法</CardTitle>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="preview">
-                  <TabsList>
-                    <TabsTrigger value="preview">プレビュー</TabsTrigger>
-                    <TabsTrigger value="markdown">Markdown</TabsTrigger>
+                <Tabs defaultValue="url" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="url">URL入力</TabsTrigger>
+                    <TabsTrigger value="search">検索</TabsTrigger>
                   </TabsList>
-                  <TabsContent value="preview" className="mt-4">
-                    <div className="prose max-w-none p-6 border rounded-lg bg-white">
-                      <ReactMarkdown>{pageData.content}</ReactMarkdown>
+
+                  <TabsContent value="url" className="space-y-4 animate-in fade-in duration-300">
+                    <div className="space-y-2">
+                      <Label htmlFor="pageId" className="text-xs uppercase text-slate-500">Notion URL / ID</Label>
+                      <Input
+                        id="pageId"
+                        placeholder="URLを貼り付け"
+                        value={pageId}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPageId(val.includes('notion.so') ? extractPageId(val) : val);
+                        }}
+                      />
                     </div>
+                    <Button className="w-full" onClick={() => handlePreview()} disabled={loading}>
+                      {loading ? '読み込み中...' : 'プレビュー表示'}
+                    </Button>
                   </TabsContent>
-                  <TabsContent value="markdown" className="mt-4">
-                    <pre className="p-6 border rounded-lg bg-gray-50 overflow-x-auto">
-                      <code className="text-sm">{pageData.content}</code>
-                    </pre>
+
+                  <TabsContent value="search" className="space-y-4 animate-in fade-in duration-300">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="タイトルで検索"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                      />
+                      <Button variant="secondary" onClick={handleSearch} disabled={loading}>検索</Button>
+                    </div>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                      {searchResults.map((page) => (
+                        <div 
+                          key={page.id} 
+                          className="p-2 text-sm border rounded hover:bg-slate-50 cursor-pointer flex justify-between items-center group"
+                          onClick={() => handlePreview(page.id)}
+                        >
+                          <span className="truncate flex-1 mr-2">{page.title}</span>
+                          <Button size="xs" variant="ghost" className="opacity-0 group-hover:opacity-100 h-7">選択</Button>
+                        </div>
+                      ))}
+                    </div>
                   </TabsContent>
                 </Tabs>
               </CardContent>
             </Card>
-          </div>
-        )}
 
-        {/* 使い方ガイド */}
-        <Card className="mt-6 border-blue-200 bg-blue-50">
-          <CardHeader>
-            <CardTitle>💡 使い方</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <p><strong>1. Notion統合を作成:</strong> https://notion.so/my-integrations</p>
-            <p><strong>2. ページに統合を接続:</strong> ページ右上「•••」→「接続」→統合を選択</p>
-            <p><strong>3. ページURLをコピー:</strong> ブラウザのアドレスバーからコピー</p>
-            <p><strong>4. このページに貼り付け:</strong> 「プレビュー」で内容確認</p>
-            <p><strong>5. インポート:</strong> チャンク戦略を選んでインポート</p>
-          </CardContent>
-        </Card>
+            <Card className="bg-blue-50/50 border-blue-100">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2 text-blue-800">
+                  <span>💡</span> 使い方ガイド
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-blue-700 space-y-2 leading-relaxed">
+                <p>1. <b>Notion側設定:</b> ページの右上 <code>...</code> メニューから「接続先」を選び、作成したインテグレーションを追加してください。</p>
+                <p>2. <b>URL:</b> ページURLをコピーして左のボックスに貼り付けます。</p>
+                <p>3. <b>インポート:</b> Markdown変換された内容を確認し、実行ボタンを押してください。</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* プレビュー表示エリア */}
+          <div className="lg:col-span-2">
+            {pageData ? (
+              <Card className="animate-in slide-in-from-right-4 duration-500 shadow-md">
+                <CardHeader className="border-b bg-slate-50/50">
+                  <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                    <div>
+                      <CardTitle className="text-xl">{pageData.title}</CardTitle>
+                      <a href={pageData.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
+                        Notionで元のページを確認 ↗
+                      </a>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex flex-col">
+                        <Label className="text-[10px] text-slate-500 mb-1">チャンク分割戦略</Label>
+                        <Select value={chunkStrategy} onValueChange={setChunkStrategy}>
+                          <SelectTrigger className="w-[140px] h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="markdown">Markdown</SelectItem>
+                            <SelectItem value="fixed">Fixed Size</SelectItem>
+                            <SelectItem value="semantic">Semantic</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button className="h-9 mt-auto" onClick={handleImport} disabled={importing}>
+                        {importing ? '実行中...' : '📥 インポート'}
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <Tabs defaultValue="rendered">
+                    <TabsList className="mb-4">
+                      <TabsTrigger value="rendered">表示確認</TabsTrigger>
+                      <TabsTrigger value="raw">ソース(MD)</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="rendered" className="prose prose-slate max-w-none border rounded-md p-6 bg-white min-h-[400px]">
+                      <ReactMarkdown>{pageData.content}</ReactMarkdown>
+                    </TabsContent>
+                    <TabsContent value="raw">
+                      <pre className="p-4 bg-slate-900 text-slate-100 rounded-md overflow-x-auto text-xs font-mono min-h-[400px]">
+                        <code>{pageData.content}</code>
+                      </pre>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="h-full min-h-[400px] border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                <div className="text-4xl mb-4">📄</div>
+                <p>Notionページを選択、またはURLを入力して<br />プレビューを表示してください</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

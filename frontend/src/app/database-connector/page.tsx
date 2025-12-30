@@ -11,6 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
+// API URL の環境変数対応
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+
 interface ConnectionConfig {
   host: string;
   port: string;
@@ -56,6 +59,7 @@ export default function DatabaseConnectorPage() {
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // 認証チェック
   if (status === 'unauthenticated') {
     router.push('/auth/signin');
     return null;
@@ -63,48 +67,54 @@ export default function DatabaseConnectorPage() {
 
   if (status === 'loading') {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">読み込み中...</div>
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[400px]">
+        <div className="text-center animate-pulse text-slate-500">読み込み中...</div>
       </div>
     );
   }
 
+  // 汎用フェッチ関数（DRY原則に基づき統一）
+  const dbFetch = async (endpoint: string, body: any) => {
+    const res = await fetch(`${API_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.detail || 'APIリクエストに失敗しました');
+    }
+    return res.json();
+  };
+
   const handleDbTypeChange = (value: string) => {
     setDbType(value);
-    // デフォルトポート設定
-    if (value === 'postgresql') {
-      setConfig({ ...config, port: '5432', service_name: undefined });
-    } else if (value === 'oracle') {
-      setConfig({ ...config, port: '1521', service_name: 'XEPDB1' });
-    } else if (value === 'sqlserver') {
-      setConfig({ ...config, port: '1433', service_name: undefined });
-    }
+    const defaults: Record<string, Partial<ConnectionConfig>> = {
+      postgresql: { port: '5432', service_name: undefined },
+      oracle: { port: '1521', service_name: 'XEPDB1' },
+      sqlserver: { port: '1433', service_name: undefined }
+    };
+    setConfig(prev => ({ ...prev, ...defaults[value] }));
   };
 
   const handleTestConnection = async () => {
     setLoading(true);
+    setConnectionStatus(null);
     try {
-      const res = await fetch('http://localhost:8001/api/database/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          db_type: dbType,
-          custom_config: useCustomConfig ? config : null,
-        }),
+      const data = await dbFetch('/api/database/test', {
+        db_type: dbType,
+        custom_config: useCustomConfig ? config : null,
       });
 
-      const data = await res.json();
       setConnectionStatus(data);
-      
       if (data.status === 'success') {
-        // テーブル一覧取得
         await fetchTables();
       }
-    } catch (error) {
-      console.error('Connection test failed:', error);
+    } catch (error: any) {
       setConnectionStatus({
         status: 'error',
-        message: 'Failed to connect',
+        message: error.message || '接続に失敗しました',
       });
     } finally {
       setLoading(false);
@@ -113,77 +123,47 @@ export default function DatabaseConnectorPage() {
 
   const fetchTables = async () => {
     try {
-      const res = await fetch('http://localhost:8001/api/database/tables', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          db_type: dbType,
-          custom_config: useCustomConfig ? config : null,
-        }),
+      const data = await dbFetch('/api/database/tables', {
+        db_type: dbType,
+        custom_config: useCustomConfig ? config : null,
       });
-
-      const data = await res.json();
       setTables(data.tables || []);
-    } catch (error) {
-      console.error('Failed to fetch tables:', error);
+    } catch (error: any) {
+      console.error('Failed to fetch tables:', error.message);
     }
   };
 
   const handleTableSelect = async (tableName: string) => {
     setSelectedTable(tableName);
     setLoading(true);
-    
     try {
-      const res = await fetch('http://localhost:8001/api/database/schema', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          db_type: dbType,
-          table_name: tableName,
-          custom_config: useCustomConfig ? config : null,
-        }),
+      const data = await dbFetch('/api/database/schema', {
+        db_type: dbType,
+        table_name: tableName,
+        custom_config: useCustomConfig ? config : null,
       });
-
-      const data = await res.json();
       setTableSchema(data.schema || []);
-      
-      // サンプルクエリ設定
-      setQuery(`SELECT * FROM ${tableName}`);
-    } catch (error) {
-      console.error('Failed to fetch schema:', error);
+      setQuery(`SELECT * FROM ${tableName} LIMIT 10`);
+    } catch (error: any) {
+      alert(`スキーマの取得に失敗しました: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   const handleExecuteQuery = async () => {
-    if (!query.trim()) {
-      alert('クエリを入力してください');
-      return;
-    }
-
+    if (!query.trim()) return;
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8001/api/database/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          db_type: dbType,
-          query: query,
-          custom_config: useCustomConfig ? config : null,
-          limit: 100,
-        }),
+      const data = await dbFetch('/api/database/query', {
+        db_type: dbType,
+        query: query,
+        custom_config: useCustomConfig ? config : null,
+        limit: 100,
       });
-
-      if (!res.ok) {
-        throw new Error('Query execution failed');
-      }
-
-      const data = await res.json();
       setQueryResult(data);
-    } catch (error) {
-      console.error('Query execution failed:', error);
-      alert('クエリの実行に失敗しました');
+    } catch (error: any) {
+      alert(`クエリ実行失敗: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -191,270 +171,214 @@ export default function DatabaseConnectorPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* ヘッダー */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-end border-b pb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">🗄️ データベース接続</h1>
-            <p className="text-gray-600 mt-2">外部データベースに接続してデータを取得</p>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">🗄️ データベース接続</h1>
+            <p className="text-gray-500 mt-1">外部データベースのカタログ参照とクエリ実行</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.push('/documents')}>
-              ドキュメント一覧
-            </Button>
-            <Button variant="outline" onClick={() => router.push('/')}>
-              ホーム
-            </Button>
+            <Button variant="outline" onClick={() => router.push('/documents')}>書類一覧</Button>
+            <Button variant="outline" onClick={() => router.push('/')}>ホーム</Button>
           </div>
         </div>
 
-        {/* 接続設定 */}
-        <Card className="mb-6">
+        {/* 接続プロファイル設定 */}
+        <Card className="border-t-4 border-t-primary">
           <CardHeader>
-            <CardTitle>接続設定</CardTitle>
-            <CardDescription>データベースの種類と接続情報を設定してください</CardDescription>
+            <CardTitle className="text-lg">接続プロファイル</CardTitle>
+            <CardDescription>Railway環境からアクセス可能なデータベース情報を入力してください</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="dbType">データベースタイプ</Label>
+                <Label>DBタイプ</Label>
                 <Select value={dbType} onValueChange={handleDbTypeChange}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="postgresql">PostgreSQL (Serena)</SelectItem>
-                    <SelectItem value="oracle">Oracle (Codex)</SelectItem>
-                    <SelectItem value="sqlserver">SQL Server</SelectItem>
+                    <SelectItem value="postgresql">PostgreSQL</SelectItem>
+                    <SelectItem value="oracle">Oracle Database</SelectItem>
+                    <SelectItem value="sqlserver">Microsoft SQL Server</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              
-              <div className="flex items-end">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={useCustomConfig}
-                    onChange={(e) => setUseCustomConfig(e.target.checked)}
-                    className="rounded"
-                  />
-                  <span className="text-sm">カスタム接続設定を使用</span>
-                </label>
+              <div className="flex items-center space-x-2 pt-8">
+                <input
+                  type="checkbox"
+                  id="customConfig"
+                  checked={useCustomConfig}
+                  onChange={(e) => setUseCustomConfig(e.target.checked)}
+                  className="w-4 h-4 accent-primary"
+                />
+                <Label htmlFor="customConfig" className="cursor-pointer">カスタム設定を手動入力する</Label>
               </div>
             </div>
 
             {useCustomConfig && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg bg-gray-50">
-                <div className="space-y-2">
-                  <Label htmlFor="host">ホスト</Label>
-                  <Input
-                    id="host"
-                    value={config.host}
-                    onChange={(e) => setConfig({ ...config, host: e.target.value })}
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-slate-50 rounded-xl border animate-in fade-in duration-300">
+                <div className="space-y-1">
+                  <Label className="text-xs">ホスト</Label>
+                  <Input value={config.host} onChange={(e) => setConfig({ ...config, host: e.target.value })} />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="port">ポート</Label>
-                  <Input
-                    id="port"
-                    value={config.port}
-                    onChange={(e) => setConfig({ ...config, port: e.target.value })}
-                  />
+                <div className="space-y-1">
+                  <Label className="text-xs">ポート</Label>
+                  <Input value={config.port} onChange={(e) => setConfig({ ...config, port: e.target.value })} />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="database">データベース名</Label>
-                  <Input
-                    id="database"
-                    value={config.database}
-                    onChange={(e) => setConfig({ ...config, database: e.target.value })}
-                  />
+                <div className="space-y-1">
+                  <Label className="text-xs">DB名</Label>
+                  <Input value={config.database} onChange={(e) => setConfig({ ...config, database: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">ユーザー</Label>
+                  <Input value={config.user} onChange={(e) => setConfig({ ...config, user: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">パスワード</Label>
+                  <Input type="password" value={config.password} onChange={(e) => setConfig({ ...config, password: e.target.value })} />
                 </div>
                 {dbType === 'oracle' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="service">サービス名</Label>
-                    <Input
-                      id="service"
-                      value={config.service_name || ''}
-                      onChange={(e) => setConfig({ ...config, service_name: e.target.value })}
-                    />
+                  <div className="space-y-1">
+                    <Label className="text-xs">サービス名</Label>
+                    <Input value={config.service_name || ''} onChange={(e) => setConfig({ ...config, service_name: e.target.value })} />
                   </div>
                 )}
-                <div className="space-y-2">
-                  <Label htmlFor="user">ユーザー名</Label>
-                  <Input
-                    id="user"
-                    value={config.user}
-                    onChange={(e) => setConfig({ ...config, user: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">パスワード</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={config.password}
-                    onChange={(e) => setConfig({ ...config, password: e.target.value })}
-                  />
-                </div>
               </div>
             )}
 
-            <Button onClick={handleTestConnection} disabled={loading}>
-              {loading ? '接続中...' : '🔌 接続テスト'}
-            </Button>
-
-            {connectionStatus && (
-              <Alert variant={connectionStatus.status === 'success' ? 'default' : 'destructive'}>
-                <AlertTitle>
-                  {connectionStatus.status === 'success' ? '✅ 接続成功' : '❌ 接続失敗'}
-                </AlertTitle>
-                <AlertDescription>{connectionStatus.message}</AlertDescription>
-              </Alert>
-            )}
+            <div className="flex items-center gap-4">
+              <Button onClick={handleTestConnection} disabled={loading} className="w-40">
+                {loading ? '接続中...' : '🔌 接続テスト'}
+              </Button>
+              {connectionStatus && (
+                <div className={`text-sm font-medium ${connectionStatus.status === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                  {connectionStatus.status === 'success' ? '✓ 接続に成功しました' : `✕ ${connectionStatus.message}`}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        {/* テーブル一覧とクエリ実行 */}
+        {/* 作業エリア */}
         {connectionStatus?.status === 'success' && (
           <Tabs defaultValue="tables" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="tables">テーブル一覧</TabsTrigger>
-              <TabsTrigger value="query">クエリ実行</TabsTrigger>
+            <TabsList className="mb-4">
+              <TabsTrigger value="tables">データ構造</TabsTrigger>
+              <TabsTrigger value="query">SQL実行</TabsTrigger>
             </TabsList>
 
-            {/* テーブル一覧タブ */}
-            <TabsContent value="tables" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* テーブルリスト */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>テーブル ({tables.length})</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                      {tables.map((table) => (
-                        <Button
-                          key={table}
-                          variant={selectedTable === table ? 'default' : 'outline'}
-                          className="w-full justify-start"
-                          onClick={() => handleTableSelect(table)}
-                        >
-                          {table}
-                        </Button>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* テーブルスキーマ */}
-                {selectedTable && (
-                  <Card className="md:col-span-2">
-                    <CardHeader>
-                      <CardTitle>{selectedTable} のスキーマ</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {tableSchema.map((col, index) => (
-                          <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                            <div className="flex justify-between">
-                              <div>
-                                <p className="font-medium">{col.name}</p>
-                                <p className="text-sm text-gray-500">{col.type}</p>
-                              </div>
-                              <div className="text-right text-sm">
-                                <p>{col.nullable ? 'NULL可' : 'NOT NULL'}</p>
-                                {col.default !== 'None' && (
-                                  <p className="text-gray-500">default: {col.default}</p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </TabsContent>
-
-            {/* クエリ実行タブ */}
-            <TabsContent value="query" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>SQLクエリ</CardTitle>
-                  <CardDescription>
-                    実行するSQLクエリを入力してください（最大100行まで取得）
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <textarea
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className="w-full min-h-[150px] rounded-md border border-input bg-background px-3 py-2 font-mono text-sm"
-                    placeholder="SELECT * FROM table_name"
-                  />
-                  <Button onClick={handleExecuteQuery} disabled={loading}>
-                    {loading ? '実行中...' : '▶️ クエリ実行'}
-                  </Button>
-                </CardContent>
+            <TabsContent value="tables" className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-in slide-in-from-bottom-2">
+              {/* テーブルリスト */}
+              <Card className="md:col-span-1 h-fit">
+                <div className="p-4 border-b font-semibold bg-slate-50 text-sm">テーブル ({tables.length})</div>
+                <div className="p-2 space-y-1 max-h-[500px] overflow-y-auto">
+                  {tables.map((table) => (
+                    <Button
+                      key={table}
+                      variant={selectedTable === table ? 'default' : 'ghost'}
+                      className="w-full justify-start text-xs h-9"
+                      onClick={() => handleTableSelect(table)}
+                    >
+                      {table}
+                    </Button>
+                  ))}
+                </div>
               </Card>
 
-              {/* クエリ結果 */}
-              {queryResult && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      クエリ結果 ({queryResult.row_count}行)
-                    </CardTitle>
-                    <CardDescription className="font-mono text-xs">
-                      {queryResult.query}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
+              {/* スキーマ詳細 */}
+              <Card className="md:col-span-3">
+                <CardHeader>
+                  <CardTitle className="text-md">{selectedTable || 'テーブルを選択してください'}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {tableSchema.length > 0 ? (
+                    <div className="overflow-hidden border rounded-lg">
                       <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b">
-                            {queryResult.columns.map((col) => (
-                              <th key={col} className="px-4 py-2 text-left font-medium">
-                                {col}
-                              </th>
-                            ))}
+                        <thead className="bg-slate-50 border-b text-slate-500">
+                          <tr>
+                            <th className="px-4 py-2 text-left font-medium">カラム名</th>
+                            <th className="px-4 py-2 text-left font-medium">型</th>
+                            <th className="px-4 py-2 text-left font-medium">Null</th>
+                            <th className="px-4 py-2 text-left font-medium">デフォルト</th>
                           </tr>
                         </thead>
-                        <tbody>
-                          {queryResult.data.map((row, index) => (
-                            <tr key={index} className="border-b">
-                              {queryResult.columns.map((col) => (
-                                <td key={col} className="px-4 py-2">
-                                  {String(row[col] ?? '')}
-                                </td>
-                              ))}
+                        <tbody className="divide-y">
+                          {tableSchema.map((col, i) => (
+                            <tr key={i} className="hover:bg-slate-50/50">
+                              <td className="px-4 py-2 font-mono">{col.name}</td>
+                              <td className="px-4 py-2 text-slate-500">{col.type}</td>
+                              <td className="px-4 py-2">{col.nullable ? 'Yes' : 'No'}</td>
+                              <td className="px-4 py-2 text-xs text-slate-400">{col.default === 'None' ? '-' : col.default}</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
-                  </CardContent>
+                  ) : (
+                    <div className="py-20 text-center text-slate-400 italic">
+                      テーブルを選択すると詳細が表示されます
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="query" className="space-y-4 animate-in slide-in-from-bottom-2">
+              <Card>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="rounded-lg border bg-slate-950 p-4">
+                    <Label className="text-slate-400 mb-2 block text-xs">SQL Editor</Label>
+                    <textarea
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      className="w-full min-h-[120px] bg-transparent text-slate-100 font-mono text-sm outline-none resize-none"
+                      placeholder="SELECT * FROM users LIMIT 10"
+                    />
+                  </div>
+                  <Button onClick={handleExecuteQuery} disabled={loading} size="lg">
+                    {loading ? '実行中...' : '▶ クエリを実行'}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {queryResult && (
+                <Card className="overflow-hidden">
+                  <div className="p-4 bg-slate-50 border-b flex justify-between items-center">
+                    <span className="text-sm font-bold">実行結果: {queryResult.row_count}件</span>
+                    <span className="text-xs text-slate-400 font-mono line-clamp-1">{queryResult.query}</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-white border-b">
+                        <tr>
+                          {queryResult.columns.map(c => <th key={c} className="px-4 py-2 text-left bg-slate-50/50">{c}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {queryResult.data.map((row, i) => (
+                          <tr key={i} className="hover:bg-blue-50/30">
+                            {queryResult.columns.map(c => (
+                              <td key={c} className="px-4 py-2 whitespace-nowrap">{String(row[c] ?? '')}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </Card>
               )}
             </TabsContent>
           </Tabs>
         )}
 
-        {/* 使い方ガイド */}
-        <Card className="mt-6 border-blue-200 bg-blue-50">
-          <CardHeader>
-            <CardTitle>💡 使い方</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <p><strong>1. データベースタイプを選択:</strong> PostgreSQL/Oracle/SQL Server</p>
-            <p><strong>2. 接続情報を入力:</strong> カスタム設定を使用する場合はチェック</p>
-            <p><strong>3. 接続テスト:</strong> 接続が成功すればテーブル一覧が表示されます</p>
-            <p><strong>4. テーブル選択:</strong> テーブルをクリックしてスキーマを確認</p>
-            <p><strong>5. クエリ実行:</strong> SQLクエリを入力して実行</p>
-          </CardContent>
-        </Card>
+        {/* ガイド */}
+        <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 flex gap-4 items-start">
+          <div className="text-blue-500 mt-1">💡</div>
+          <div className="text-sm text-blue-800 space-y-1">
+            <p className="font-bold">ネットワークに関する注意</p>
+            <p>Railway等のクラウド環境から社内ネットワーク上のDBへ接続する場合、DB側のFirewallでバックエンドの外部IPを許可するか、VPN/トンネル接続が必要になる場合があります。</p>
+          </div>
+        </div>
       </div>
     </div>
   );
