@@ -45,7 +45,7 @@ async def search(request: Request):
 
 
 # テーブル作成
-Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
 
 # DB依存性
