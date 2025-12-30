@@ -1,14 +1,20 @@
+# AI & Vector DB
 openai
-langchain-openai
-langchain-text-splitters
+pinecone-client
 langchain
+langchain-openai
 langchain-community
+langchain-text-splitters
+tiktoken
+
+# Web Framework & Server
 fastapi
 uvicorn
-sqlalchemy
-psycopg2-binary
-python-dotenv
-tiktoken
 slowapi
 pydantic
 requests
+python-dotenv
+
+# Database
+sqlalchemy
+psycopg2-binary
