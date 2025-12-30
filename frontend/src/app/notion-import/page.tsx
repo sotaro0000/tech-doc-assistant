@@ -213,7 +213,7 @@ export default function NotionImportPage() {
                           onClick={() => handlePreview(page.id)}
                         >
                           <span className="truncate flex-1 mr-2">{page.title}</span>
-                          <Button size="xs" variant="ghost" className="opacity-0 group-hover:opacity-100 h-7">選択</Button>
+                          <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 h-7">選択</Button>
                         </div>
                       ))}
                     </div>

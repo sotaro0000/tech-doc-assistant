@@ -1,12 +1,15 @@
 // ヘルパー関数を作成
 // frontend/src/lib/utils.ts
-export function formatDate(date: Date): string {
-  return date.toLocaleDateString('ja-JP')
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
 }
 
-export function truncateText(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text
-  return text.substring(0, maxLength) + '...'
+export function truncateText(text: string, length: number) {
+  if (text.length <= length) return text;
+  return text.substring(0, length) + "...";
 }
 
 export function calculateReadingTime(text: string): number {
