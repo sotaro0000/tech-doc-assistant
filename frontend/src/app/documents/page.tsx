@@ -95,36 +95,66 @@ export default function DocumentsPage() {
         ) : (
           <div className="space-y-4">
             {documents.map((doc) => (
-              <Card key={doc.id} className="cursor-pointer hover:shadow-md transition" onClick={() => router.push(`/documents/${doc.id}`)}>
-                <CardHeader>
-                    <Button variant="outline" onClick={() => router.push('/data-analysis')}>
-                        📊データ分析
-                    </Button>
-                    <Button variant="outline" onClick={() => router.push('/database-connector')}>
-                        🗄️ DB接続
-                    </Button>
-                  <CardTitle>{doc.title}</CardTitle>
-                  <CardDescription>
-                    作成: {new Date(doc.created_at).toLocaleDateString('ja-JP')}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 line-clamp-2">{doc.content.substring(0, 150)}...</p>
-                  <div className="mt-4 flex justify-end">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(doc.id);
-                      }}
+                <Card key={doc.id} className="hover:shadow-md transition">
+                    <CardHeader>
+                    <div className="flex justify-between items-start mb-2">
+                        <CardTitle 
+                        className="cursor-pointer hover:text-blue-600 transition" 
+                        onClick={() => router.push(`/documents/${doc.id}`)}
+                        >
+                        {doc.title}
+                        </CardTitle>
+                        <div className="flex gap-2">
+                        {/* データ分析ボタン：イベントの伝播を止め、適切なパスへ */}
+                        <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={(e) => {
+                            e.stopPropagation(); 
+                            router.push('/data-analysis'); // または `/data-analysis/${doc.id}`
+                            }}
+                        >
+                            📊 データ分析
+                        </Button>
+                        {/* DB接続ボタン：イベントの伝播を止め、適切なパスへ */}
+                        <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={(e) => {
+                            e.stopPropagation();
+                            router.push('/database-connector'); // または `/database-connector/${doc.id}`
+                            }}
+                        >
+                            🗄️ DB接続
+                        </Button>
+                        </div>
+                    </div>
+                    <CardDescription>
+                        作成: {new Date(doc.created_at).toLocaleDateString('ja-JP')}
+                    </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                    <p 
+                        className="text-gray-600 line-clamp-2 cursor-pointer"
+                        onClick={() => router.push(`/documents/${doc.id}`)}
                     >
-                      削除
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                        {doc.content.substring(0, 150)}...
+                    </p>
+                    <div className="mt-4 flex justify-end">
+                        <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(doc.id);
+                        }}
+                        >
+                        削除
+                        </Button>
+                    </div>
+                    </CardContent>
+                </Card>
+                ))}
           </div>
         )}
 
