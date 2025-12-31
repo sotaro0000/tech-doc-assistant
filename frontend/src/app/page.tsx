@@ -7,11 +7,16 @@ import { useSession, signIn } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input'; // Inputコンポーネントがある場合
 
 export default function Home() {
   const { status } = useSession();
   const [apiStatus, setApiStatus] = useState<string>('checking...');
   const [dbStatus, setDbStatus] = useState<string>('checking...');
+  
+  // 🟢 合言葉管理用のステート
+  const [passwordInput, setPasswordInput] = useState("");
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     fetch(`${API_URL}/health`)
@@ -25,6 +30,49 @@ export default function Home() {
       .catch(() => setDbStatus('disconnected'));
   }, []);
 
+  // 🟢 合言葉チェック関数
+  const handleAuth = () => {
+    const correctPassword = process.env.NEXT_PUBLIC_APP_PASSWORD;
+    if (passwordInput === correctPassword) {
+      setIsAuthorized(true);
+    } else {
+      alert("合言葉が正しくありません。");
+    }
+  };
+
+  // 🔴 ログイン前、または合言葉が未入力の場合の表示
+  if (status !== 'authenticated' || !isAuthorized) {
+    return (
+      <div className="container mx-auto px-4 py-16 flex flex-col items-center justify-center min-h-[80-vh]">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">📚 Tech Doc Assistant</h1>
+          <p className="text-xl text-gray-600 mb-8">このアプリを利用するには認証が必要です</p>
+          
+          {status !== 'authenticated' ? (
+            <Button size="lg" onClick={() => signIn('github')}>
+              GitHubでログインして開始
+            </Button>
+          ) : (
+            <Card className="w-full max-w-sm mx-auto p-6">
+              <CardTitle className="mb-4 text-lg">合言葉を入力</CardTitle>
+              <div className="flex flex-col gap-4">
+                <Input
+                  type="password"
+                  placeholder="合言葉を入力してください"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
+                />
+                <Button onClick={handleAuth}>認証する</Button>
+              </div>
+            </Card>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // 🟢 ログイン ＋ 合言葉一致後の表示（元のコンテンツ）
   return (
     <div className="container mx-auto px-4 py-16">
       <div className="max-w-4xl mx-auto">
@@ -41,7 +89,6 @@ export default function Home() {
           <Card>
             <CardHeader>
               <CardTitle>Backend API (FastAPI)</CardTitle>
-              <CardDescription></CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
@@ -56,7 +103,6 @@ export default function Home() {
           <Card>
             <CardHeader>
               <CardTitle>Database (PostgreSQL)</CardTitle>
-              <CardDescription></CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
@@ -101,20 +147,12 @@ export default function Home() {
         </Card>
 
         <div className="flex gap-4 justify-center">
-          {status === 'authenticated' ? (
-            <>
-              <Button size="lg" onClick={() => window.location.href = '/documents'}>
-                ドキュメント一覧
-              </Button>
-              <Button size="lg" variant="outline" onClick={() => window.location.href = '/chunk-analyzer'}>
-                チャンク分析
-              </Button>
-            </>
-          ) : (
-            <Button size="lg" onClick={() => signIn('github')}>
-              GitHubでログイン
-            </Button>
-          )}
+          <Button size="lg" onClick={() => window.location.href = '/documents'}>
+            ドキュメント一覧
+          </Button>
+          <Button size="lg" variant="outline" onClick={() => window.location.href = '/chunk-analyzer'}>
+            チャンク分析
+          </Button>
         </div>
       </div>
     </div>
