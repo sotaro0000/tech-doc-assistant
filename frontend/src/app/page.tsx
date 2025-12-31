@@ -41,7 +41,7 @@ export default function Home() {
           <Card>
             <CardHeader>
               <CardTitle>Backend API (FastAPI)</CardTitle>
-              <CardDescription>Port 8001</CardDescription>
+              <CardDescription></CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
@@ -56,7 +56,7 @@ export default function Home() {
           <Card>
             <CardHeader>
               <CardTitle>Database (PostgreSQL)</CardTitle>
-              <CardDescription>Port 5433</CardDescription>
+              <CardDescription></CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
