@@ -7,16 +7,17 @@ import { useSession, signIn } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input'; // Inputコンポーネントがある場合
+import { Input } from '@/components/ui/input';
 
 export default function Home() {
   const { status } = useSession();
   const [apiStatus, setApiStatus] = useState<string>('checking...');
   const [dbStatus, setDbStatus] = useState<string>('checking...');
   
-  // 🟢 合言葉管理用のステート
   const [passwordInput, setPasswordInput] = useState("");
   const [isAuthorized, setIsAuthorized] = useState(false);
+  // 🟢 表示・非表示を切り替えるためのステート
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     fetch(`${API_URL}/health`)
@@ -30,7 +31,6 @@ export default function Home() {
       .catch(() => setDbStatus('disconnected'));
   }, []);
 
-  // 🟢 合言葉チェック関数
   const handleAuth = () => {
     const correctPassword = process.env.NEXT_PUBLIC_APP_PASSWORD;
     if (passwordInput === correctPassword) {
@@ -40,7 +40,6 @@ export default function Home() {
     }
   };
 
-  // 🔴 ログイン前、または合言葉が未入力の場合の表示
   if (status !== 'authenticated' || !isAuthorized) {
     return (
       <div className="container mx-auto px-4 py-16 flex flex-col items-center justify-center min-h-[80-vh]">
@@ -53,16 +52,28 @@ export default function Home() {
               GitHubでログインして開始
             </Button>
           ) : (
-            <Card className="w-full max-w-sm mx-auto p-6">
+            <Card className="w-full max-w-sm mx-auto p-6 text-left">
               <CardTitle className="mb-4 text-lg">合言葉を入力</CardTitle>
               <div className="flex flex-col gap-4">
-                <Input
-                  type="password"
-                  placeholder="合言葉を入力してください"
-                  value={passwordInput}
-                  onChange={(e) => setPasswordInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
-                />
+                {/* 🟢 入力欄と切り替えボタンをまとめるグループ */}
+                <div className="relative">
+                  <Input
+                    // 🟢 showPasswordがtrueなら text、falseなら password になる
+                    type={showPassword ? "text" : "password"}
+                    placeholder="合言葉を入力してください"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
+                    className="pr-16" // 右側にボタン用のスペースを確保
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-500 hover:text-blue-600"
+                  >
+                    {showPassword ? "非表示" : "表示"}
+                  </button>
+                </div>
                 <Button onClick={handleAuth}>認証する</Button>
               </div>
             </Card>
@@ -72,7 +83,7 @@ export default function Home() {
     );
   }
 
-  // 🟢 ログイン ＋ 合言葉一致後の表示（元のコンテンツ）
+  // --- これ以降（ログイン後のコンテンツ）は変更なし ---
   return (
     <div className="container mx-auto px-4 py-16">
       <div className="max-w-4xl mx-auto">
