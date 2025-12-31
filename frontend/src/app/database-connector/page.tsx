@@ -179,7 +179,7 @@ export default function DatabaseConnectorPage() {
             <p className="text-gray-500 mt-1">外部データベースのカタログ参照とクエリ実行</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.push('/documents')}>書類一覧</Button>
+            <Button variant="outline" onClick={() => router.push('/documents')}>ドキュメント一覧</Button>
             <Button variant="outline" onClick={() => router.push('/')}>ホーム</Button>
           </div>
         </div>
