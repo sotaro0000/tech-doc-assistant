@@ -117,7 +117,7 @@ export default function Home() {
                   <div className="flex flex-col items-start gap-2">
                     <button
                       onClick={() => signIn('github', { prompt: 'select_account' })}
-                      className="inline-flex items-center gap-2 rounded-md bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800"
+                      className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 hover:shadow-md"
                     >
                       <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
                         <path d="M12 2A10 10 0 0 0 8.8 21.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2z" />
@@ -127,7 +127,7 @@ export default function Home() {
                     <p className="font-mono text-xs text-zinc-400">※ GitHub アカウントを選択してログインできます</p>
                   </div>
                 ) : (
-                  <div className="w-full max-w-sm rounded-md border border-zinc-200 p-5">
+                  <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
                     <p className="mb-3 font-mono text-[11px] uppercase tracking-wider text-zinc-500">passphrase required</p>
                     <div className="flex flex-col gap-3">
                       <div className="relative">
@@ -152,7 +152,7 @@ export default function Home() {
             </div>
 
             {/* 右：ターミナル演出 */}
-            <div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl">
+            <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 shadow-xl">
               <div className="flex items-center gap-1.5 border-b border-zinc-800 px-4 py-2.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-zinc-600" />
                 <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
@@ -176,13 +176,13 @@ export default function Home() {
           {/* How it works */}
           <div className="mt-16">
             <p className="font-mono text-xs uppercase tracking-wider text-zinc-400">// how it works</p>
-            <div className="mt-4 grid grid-cols-1 gap-px border border-zinc-200 bg-zinc-200 sm:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
               {[
                 ["01", "GitHub でログイン", "数秒で開始。面倒なアカウント登録は不要"],
                 ["02", "ドキュメントを集約", "Markdown 作成・Notion / CSV 取込で社内ナレッジを一元化"],
                 ["03", "自然言語で質問", "RAG が出典（根拠）付きで回答を生成"],
               ].map(([n, t, d]) => (
-                <div key={n} className="bg-white p-5">
+                <div key={n} className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
                   <span className="font-mono text-sm font-medium text-emerald-600">{n}</span>
                   <p className="mt-1.5 text-sm font-medium text-zinc-900">{t}</p>
                   <p className="mt-0.5 text-xs leading-relaxed text-zinc-500">{d}</p>
@@ -194,9 +194,9 @@ export default function Home() {
           {/* Features */}
           <div className="mt-12">
             <p className="font-mono text-xs uppercase tracking-wider text-zinc-400">// features</p>
-            <div className="mt-4 grid grid-cols-1 gap-px border border-zinc-200 bg-zinc-200 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {features.map((f, i) => (
-                <div key={f.title} className="bg-white p-5">
+                <div key={f.title} className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
                   <div className="flex items-center gap-2 text-zinc-400 [&_svg]:h-4 [&_svg]:w-4">
                     {f.icon}
                     <span className="font-mono text-[11px] text-zinc-300">{String(i + 1).padStart(2, '0')}</span>
@@ -213,7 +213,7 @@ export default function Home() {
             <p className="font-mono text-xs uppercase tracking-wider text-zinc-400">// stack</p>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {techStack.map((s) => (
-                <span key={s} className="border border-zinc-200 px-2 py-0.5 font-mono text-[11px] text-zinc-600">{s}</span>
+                <span key={s} className="rounded-full border border-zinc-200 bg-white px-3 py-1 font-mono text-[11px] text-zinc-600">{s}</span>
               ))}
             </div>
           </div>
