@@ -90,25 +90,23 @@ export default function Home() {
     ];
     const techStack = ['Next.js 14', 'TypeScript', 'FastAPI', 'GPT-4 / Pinecone', 'pandas', 'PostgreSQL', 'Docker'];
     return (
-      <div
-        className="min-h-[88vh] bg-white"
-        style={{
-          backgroundImage: "radial-gradient(115% 55% at 50% -6%, #ecfdf5 0%, rgba(236,253,245,0) 58%)",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
-        <div className="mx-auto max-w-5xl px-5 py-14 sm:py-16">
-          <p className="font-mono text-xs tracking-wider text-emerald-700">// AI documentation platform</p>
+      <div className="min-h-[88vh] bg-white">
+        {/* ===== ダークグラデのヒーロー ===== */}
+        <section className="relative overflow-hidden bg-slate-950 text-white">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-950 via-zinc-900 to-emerald-900/70"></div>
+          <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-emerald-500/20 blur-3xl"></div>
+          <div className="relative mx-auto max-w-5xl px-5 py-14 sm:py-16">
+            <p className="font-mono text-xs tracking-wider text-emerald-300">// AI documentation platform</p>
 
           <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:items-center">
             {/* 左：見出し + CTA */}
             <div>
               <p className="font-mono text-sm text-zinc-400">Tech&nbsp;Doc&nbsp;Assistant</p>
-              <h1 className="mt-2 text-3xl font-bold leading-[1.2] tracking-tight text-zinc-900 sm:text-[2.5rem]">
+              <h1 className="mt-2 text-3xl font-bold leading-[1.2] tracking-tight text-white sm:text-[2.5rem]">
                 技術ドキュメントを、<br />
-                AIで&ldquo;探す&rdquo;。
+                AIで<span className="text-emerald-400">&ldquo;探す&rdquo;</span>。
               </h1>
-              <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-zinc-600">
+              <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-zinc-300">
                 GPT-4 と RAG（ベクトル検索）で、ドキュメントに自然言語で質問。Markdown 管理・Notion 連携・データ分析・外部DB接続までを備えた、開発者向けのフルスタック・ドキュメント基盤です。
               </p>
 
@@ -117,7 +115,7 @@ export default function Home() {
                   <div className="flex flex-col items-start gap-2">
                     <button
                       onClick={() => signIn('github', { prompt: 'select_account' })}
-                      className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 hover:shadow-md"
+                      className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-zinc-900 shadow-lg transition hover:bg-zinc-100"
                     >
                       <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
                         <path d="M12 2A10 10 0 0 0 8.8 21.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2z" />
@@ -152,7 +150,7 @@ export default function Home() {
             </div>
 
             {/* 右：ターミナル演出 */}
-            <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 shadow-xl">
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/80 shadow-2xl ring-1 ring-emerald-500/10">
               <div className="flex items-center gap-1.5 border-b border-zinc-800 px-4 py-2.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-zinc-600" />
                 <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
@@ -172,9 +170,13 @@ export default function Home() {
               </pre>
             </div>
           </div>
+          </div>
+        </section>
 
+        {/* ===== 本体（ライト）===== */}
+        <section className="mx-auto max-w-5xl px-5 py-16">
           {/* How it works */}
-          <div className="mt-16">
+          <div className="mt-0">
             <p className="font-mono text-xs uppercase tracking-wider text-zinc-400">// how it works</p>
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
               {[
@@ -217,7 +219,7 @@ export default function Home() {
               ))}
             </div>
           </div>
-        </div>
+        </section>
       </div>
     );
   }
