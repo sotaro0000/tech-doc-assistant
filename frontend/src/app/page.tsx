@@ -90,7 +90,13 @@ export default function Home() {
     ];
     const techStack = ['Next.js 14', 'TypeScript', 'FastAPI', 'GPT-4 / Pinecone', 'pandas', 'PostgreSQL', 'Docker'];
     return (
-      <div className="min-h-[88vh] bg-white">
+      <div
+        className="min-h-[88vh] bg-white"
+        style={{
+          backgroundImage: "radial-gradient(115% 55% at 50% -6%, #ecfdf5 0%, rgba(236,253,245,0) 58%)",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
         <div className="mx-auto max-w-5xl px-5 py-14 sm:py-16">
           <p className="font-mono text-xs tracking-wider text-emerald-700">// AI documentation platform</p>
 
