@@ -167,8 +167,26 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Features */}
+          {/* How it works */}
           <div className="mt-16">
+            <p className="font-mono text-xs uppercase tracking-wider text-zinc-400">// how it works</p>
+            <div className="mt-4 grid grid-cols-1 gap-px border border-zinc-200 bg-zinc-200 sm:grid-cols-3">
+              {[
+                ["01", "GitHub でログイン", "数秒で開始。面倒なアカウント登録は不要"],
+                ["02", "ドキュメントを集約", "Markdown 作成・Notion / CSV 取込で社内ナレッジを一元化"],
+                ["03", "自然言語で質問", "RAG が出典（根拠）付きで回答を生成"],
+              ].map(([n, t, d]) => (
+                <div key={n} className="bg-white p-5">
+                  <span className="font-mono text-sm font-medium text-emerald-600">{n}</span>
+                  <p className="mt-1.5 text-sm font-medium text-zinc-900">{t}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-zinc-500">{d}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Features */}
+          <div className="mt-12">
             <p className="font-mono text-xs uppercase tracking-wider text-zinc-400">// features</p>
             <div className="mt-4 grid grid-cols-1 gap-px border border-zinc-200 bg-zinc-200 sm:grid-cols-2 lg:grid-cols-3">
               {features.map((f, i) => (
