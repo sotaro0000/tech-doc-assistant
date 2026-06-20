@@ -91,85 +91,101 @@ export default function Home() {
     const techStack = ['Next.js 14', 'TypeScript', 'FastAPI', 'GPT-4 / Pinecone', 'pandas', 'PostgreSQL', 'Docker'];
     return (
       <div className="min-h-[88vh] bg-white">
-        {/* ===== ダークグラデのヒーロー ===== */}
-        <section className="relative overflow-hidden bg-slate-950 text-white">
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-950 via-zinc-900 to-emerald-900/70"></div>
-          <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-emerald-500/20 blur-3xl"></div>
-          <div className="relative mx-auto max-w-5xl px-5 py-14 sm:py-16">
-            <p className="font-mono text-xs tracking-wider text-emerald-300">// AI documentation platform</p>
+        {/* ===== IDE / ターミナル型ヒーロー（ウィンドウ1枚で構成）===== */}
+        <section className="bg-[#0b0f17]">
+          <div className="mx-auto max-w-5xl px-5 py-10 sm:py-14">
+            {/* エディタ・ウィンドウ */}
+            <div className="overflow-hidden rounded-xl border border-zinc-800 bg-[#0d1117] shadow-2xl">
+              {/* タイトルバー */}
+              <div className="flex items-center gap-1.5 border-b border-zinc-800 bg-[#161b22] px-4 py-2.5">
+                <span className="h-3 w-3 rounded-full bg-[#ff5f56]" />
+                <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
+                <span className="h-3 w-3 rounded-full bg-[#27c93f]" />
+                <span className="ml-3 font-mono text-[11px] text-zinc-500">tech-doc-assistant — workspace</span>
+                <a href="https://github.com/sotaro0000/tech-doc-assistant" target="_blank" rel="noreferrer noopener" className="ml-auto font-mono text-[11px] text-zinc-500 transition hover:text-zinc-200">GitHub ↗</a>
+              </div>
+              {/* タブバー */}
+              <div className="flex items-stretch border-b border-zinc-800 bg-[#0d1117] font-mono text-[11px]">
+                <span className="border-r border-zinc-800 bg-[#0b0f17] px-4 py-2 text-zinc-200">README.md</span>
+                <span className="border-r border-zinc-800 px-4 py-2 text-zinc-600">search.ts</span>
+                <span className="hidden border-r border-zinc-800 px-4 py-2 text-zinc-600 sm:block">ask.http</span>
+              </div>
 
-          <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:items-center">
-            {/* 左：見出し + CTA */}
-            <div>
-              <p className="font-mono text-sm text-zinc-400">Tech&nbsp;Doc&nbsp;Assistant</p>
-              <h1 className="mt-2 text-3xl font-bold leading-[1.2] tracking-tight text-white sm:text-[2.5rem]">
-                技術ドキュメントを、<br />
-                AIで<span className="text-emerald-400">&ldquo;探す&rdquo;</span>。
-              </h1>
-              <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-zinc-300">
-                GPT-4 と RAG（ベクトル検索）で、ドキュメントに自然言語で質問。Markdown 管理・Notion 連携・データ分析・外部DB接続までを備えた、開発者向けのフルスタック・ドキュメント基盤です。
-              </p>
+              {/* 本体：左=README ペイン / 右=ターミナルペイン */}
+              <div className="grid lg:grid-cols-2">
+                {/* 左：README（行番号付き） */}
+                <div className="border-b border-zinc-800 p-6 lg:border-b-0 lg:border-r">
+                  <pre className="font-mono text-[12px] leading-relaxed text-zinc-500">
+<span className="select-none text-zinc-700">1 </span><span className="text-zinc-600"># Tech Doc Assistant</span>
+{"\n"}<span className="select-none text-zinc-700">2 </span><span className="text-emerald-400">// AI documentation platform — RAG</span>
+                  </pre>
+                  <h1 className="mt-4 text-[1.9rem] font-bold leading-[1.18] tracking-tight text-white sm:text-[2.4rem]">
+                    技術ドキュメントを、<br />
+                    AIで<span className="text-emerald-400">&ldquo;探す&rdquo;</span>。
+                  </h1>
+                  <p className="mt-4 max-w-xl text-[14.5px] leading-relaxed text-zinc-400">
+                    GPT-4 と RAG（ベクトル検索）で、ドキュメントに自然言語で質問。Markdown 管理・Notion 連携・データ分析・外部DB接続までを備えた、開発者向けのフルスタック・ドキュメント基盤です。
+                  </p>
 
-              <div className="mt-7">
-                {status !== 'authenticated' ? (
-                  <div className="flex flex-col items-start gap-2">
-                    <button
-                      onClick={() => signIn('github', { prompt: 'select_account' })}
-                      className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-zinc-900 shadow-lg transition hover:bg-zinc-100"
-                    >
-                      <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
-                        <path d="M12 2A10 10 0 0 0 8.8 21.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2z" />
-                      </svg>
-                      GitHub でログインして開始
-                    </button>
-                    <p className="font-mono text-xs text-zinc-400">※ GitHub アカウントを選択してログインできます</p>
-                  </div>
-                ) : (
-                  <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-                    <p className="mb-3 font-mono text-[11px] uppercase tracking-wider text-zinc-500">passphrase required</p>
-                    <div className="flex flex-col gap-3">
-                      <div className="relative">
-                        <Input
-                          type={showPassword ? "text" : "password"}
-                          placeholder="合言葉を入力"
-                          value={passwordInput}
-                          onChange={(e) => setPasswordInput(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
-                          className="pr-16 font-mono"
-                        />
-                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-xs text-zinc-400 hover:text-emerald-700">
-                          {showPassword ? "hide" : "show"}
+                  <div className="mt-7">
+                    {status !== 'authenticated' ? (
+                      <div className="flex flex-col items-start gap-2">
+                        <button
+                          onClick={() => signIn('github', { prompt: 'select_account' })}
+                          className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-3 text-sm font-semibold text-[#0b0f17] shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400"
+                        >
+                          <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+                            <path d="M12 2A10 10 0 0 0 8.8 21.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2z" />
+                          </svg>
+                          GitHub でログインして開始
                         </button>
+                        <p className="font-mono text-xs text-zinc-600">※ GitHub アカウントを選択してログインできます</p>
                       </div>
-                      <Button onClick={handleAuth} className="w-full bg-emerald-600 text-white hover:bg-emerald-700">認証する</Button>
-                      <button onClick={() => signOut()} className="font-mono text-xs text-zinc-400 underline">別のアカウントでログインし直す</button>
-                    </div>
+                    ) : (
+                      <div className="w-full max-w-sm rounded-lg border border-zinc-800 bg-[#161b22] p-5 shadow-sm">
+                        <p className="mb-3 font-mono text-[11px] uppercase tracking-wider text-zinc-500">passphrase required</p>
+                        <div className="flex flex-col gap-3">
+                          <div className="relative">
+                            <Input
+                              type={showPassword ? "text" : "password"}
+                              placeholder="合言葉を入力"
+                              value={passwordInput}
+                              onChange={(e) => setPasswordInput(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
+                              className="border-zinc-700 bg-[#0d1117] pr-16 font-mono text-zinc-200 placeholder:text-zinc-600"
+                            />
+                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-xs text-zinc-500 hover:text-emerald-400">
+                              {showPassword ? "hide" : "show"}
+                            </button>
+                          </div>
+                          <Button onClick={handleAuth} className="w-full bg-emerald-500 text-[#0b0f17] hover:bg-emerald-400">認証する</Button>
+                          <button onClick={() => signOut()} className="font-mono text-xs text-zinc-500 underline">別のアカウントでログインし直す</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
 
-            {/* 右：ターミナル演出 */}
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/80 shadow-2xl ring-1 ring-emerald-500/10">
-              <div className="flex items-center gap-1.5 border-b border-zinc-800 px-4 py-2.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-zinc-600" />
-                <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
-                <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
-                <span className="ml-2 font-mono text-[11px] text-zinc-500">tech-doc-assistant</span>
+                {/* 右：ターミナルペイン */}
+                <div className="bg-[#0b0f17]">
+                  <div className="flex items-center gap-2 border-b border-zinc-800 px-4 py-2">
+                    <span className="font-mono text-[11px] text-zinc-600">TERMINAL</span>
+                    <span className="font-mono text-[11px] text-zinc-700">— ask</span>
+                  </div>
+                  <pre className="overflow-x-auto p-5 font-mono text-[12.5px] leading-relaxed text-zinc-300">
+                    <span className="text-emerald-400">$</span> ask <span className="text-amber-300">&quot;OAuth 認証フローの仕様は？&quot;</span>
+                    {"\n"}
+                    <span className="text-zinc-500">↳ retrieving from vector store…</span>
+                    {"\n"}
+                    <span className="text-zinc-500">  matched 3 docs →</span> <span className="text-sky-300">auth/oauth.md</span> <span className="text-sky-300">auth/jwt.md</span> <span className="text-sky-300">api/login.md</span>
+                    {"\n\n"}
+                    <span className="text-emerald-400">✓</span> GPT-4 が根拠付きで回答を生成
+                    {"\n"}
+                    <span className="text-zinc-600"># RAG · Pinecone · 出典リンク付き</span>
+                  </pre>
+                </div>
               </div>
-              <pre className="overflow-x-auto p-4 font-mono text-[12.5px] leading-relaxed text-zinc-300">
-                <span className="text-emerald-400">$</span> ask <span className="text-amber-300">&quot;OAuth 認証フローの仕様は？&quot;</span>
-                {"\n"}
-                <span className="text-zinc-500">↳ retrieving from vector store…</span>
-                {"\n"}
-                <span className="text-zinc-500">  matched 3 docs →</span> <span className="text-sky-300">auth/oauth.md</span> <span className="text-sky-300">auth/jwt.md</span> <span className="text-sky-300">api/login.md</span>
-                {"\n\n"}
-                <span className="text-emerald-400">✓</span> GPT-4 が根拠付きで回答を生成
-                {"\n"}
-                <span className="text-zinc-600"># RAG · Pinecone · 出典リンク付き</span>
-              </pre>
             </div>
-          </div>
           </div>
         </section>
 
